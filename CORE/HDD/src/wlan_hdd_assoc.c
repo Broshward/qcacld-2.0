@@ -47,6 +47,7 @@
   05/06/09     Shailender     Created module.
   ==========================================================================*/
 
+#include <linux/spinlock.h> 
 #include "wlan_hdd_includes.h"
 #include <aniGlobal.h>
 #include "dot11f.h"
@@ -1313,13 +1314,13 @@ static void hdd_SendAssociationEvent(struct net_device *dev,tCsrRoamInfo *pCsrRo
 
 #ifdef FEATURE_BUS_BANDWIDTH
         /* start timer in sta/p2p_cli */
-        SPIN_LOCK_BH(&pHddCtx->bus_bw_lock);
+        spin_lock_bh(&pHddCtx->bus_bw_lock);
         pAdapter->prev_tx_packets = pAdapter->stats.tx_packets;
         pAdapter->prev_rx_packets = pAdapter->stats.rx_packets;
         tlshim_get_intra_bss_fwd_pkts_count(pAdapter->sessionId,
              &pAdapter->prev_fwd_tx_packets, &pAdapter->prev_fwd_rx_packets);
         pAdapter->prev_tx_bytes = pAdapter->stats.tx_bytes;
-        SPIN_UNLOCK_BH(&pHddCtx->bus_bw_lock);
+        spin_unlock_bh(&pHddCtx->bus_bw_lock);
         hdd_start_bus_bw_compute_timer(pAdapter);
 #endif
         if (pHddCtx->cfg_ini->mon_on_sta_enable &&
@@ -1378,13 +1379,13 @@ static void hdd_SendAssociationEvent(struct net_device *dev,tCsrRoamInfo *pCsrRo
 
 #ifdef FEATURE_BUS_BANDWIDTH
         /* stop timer in sta/p2p_cli */
-        SPIN_LOCK_BH(&pHddCtx->bus_bw_lock);
+        spin_lock_bh(&pHddCtx->bus_bw_lock);
         pAdapter->prev_tx_packets = 0;
         pAdapter->prev_rx_packets = 0;
         pAdapter->prev_fwd_tx_packets = 0;
         pAdapter->prev_fwd_rx_packets = 0;
         pAdapter->prev_tx_bytes = 0;
-        SPIN_UNLOCK_BH(&pHddCtx->bus_bw_lock);
+        spin_unlock_bh(&pHddCtx->bus_bw_lock);
         hdd_stop_bus_bw_compute_timer(pAdapter);
 #endif
         if (pHddCtx->cfg_ini->mon_on_sta_enable &&

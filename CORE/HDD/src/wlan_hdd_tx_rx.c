@@ -114,7 +114,7 @@ static VOS_STATUS hdd_flush_tx_queues( hdd_adapter_t *pAdapter )
    while (++i != NUM_TX_QUEUES)
    {
       //Free up any packets in the Tx queue
-      SPIN_LOCK_BH(&pAdapter->wmm_tx_queue[i].lock);
+      spin_lock_bh(&pAdapter->wmm_tx_queue[i].lock);
       while (true)
       {
          status = hdd_list_remove_front( &pAdapter->wmm_tx_queue[i], &anchor );
@@ -128,7 +128,7 @@ static VOS_STATUS hdd_flush_tx_queues( hdd_adapter_t *pAdapter )
          }
          break;
       }
-      SPIN_UNLOCK_BH(&pAdapter->wmm_tx_queue[i].lock);
+      spin_unlock_bh(&pAdapter->wmm_tx_queue[i].lock);
       /* Back pressure is no longer in effect */
       pAdapter->isTxSuspended[i] = VOS_FALSE;
    }
@@ -165,11 +165,11 @@ void hdd_flush_ibss_tx_queues( hdd_adapter_t *pAdapter, v_U8_t STAId)
 
    for (i = 0; i < NUM_TX_QUEUES; i++)
    {
-      SPIN_LOCK_BH(&pAdapter->wmm_tx_queue[i].lock);
+      spin_lock_bh(&pAdapter->wmm_tx_queue[i].lock);
 
       if ( list_empty( &pAdapter->wmm_tx_queue[i].anchor ) )
       {
-         SPIN_UNLOCK_BH(&pAdapter->wmm_tx_queue[i].lock);
+         spin_unlock_bh(&pAdapter->wmm_tx_queue[i].lock);
          continue;
       }
 
@@ -204,7 +204,7 @@ void hdd_flush_ibss_tx_queues( hdd_adapter_t *pAdapter, v_U8_t STAId)
          pAdapter->isTxSuspended[i] = VOS_FALSE;
       }
 
-      SPIN_UNLOCK_BH(&pAdapter->wmm_tx_queue[i].lock);
+      spin_unlock_bh(&pAdapter->wmm_tx_queue[i].lock);
    }
 }
 
@@ -1730,38 +1730,38 @@ void wlan_hdd_netif_queue_control(hdd_adapter_t *adapter,
 		break;
 
 	case WLAN_STOP_ALL_NETIF_QUEUE:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		if (!adapter->pause_map) {
 			netif_tx_stop_all_queues(adapter->dev);
 			wlan_hdd_update_txq_timestamp(adapter->dev);
 			wlan_hdd_update_unpause_time(adapter);
 		}
 		adapter->pause_map |= (1 << reason);
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	case WLAN_START_ALL_NETIF_QUEUE:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		adapter->pause_map &= ~(1 << reason);
 		if (!adapter->pause_map) {
 			netif_tx_start_all_queues(adapter->dev);
 			wlan_hdd_update_pause_time(adapter);
 		}
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	case WLAN_WAKE_ALL_NETIF_QUEUE:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		adapter->pause_map &= ~(1 << reason);
 		if (!adapter->pause_map) {
 			netif_tx_wake_all_queues(adapter->dev);
 			wlan_hdd_update_pause_time(adapter);
 		}
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	case WLAN_STOP_ALL_NETIF_QUEUE_N_CARRIER:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		if (!adapter->pause_map) {
 			netif_tx_stop_all_queues(adapter->dev);
 			wlan_hdd_update_txq_timestamp(adapter->dev);
@@ -1769,33 +1769,33 @@ void wlan_hdd_netif_queue_control(hdd_adapter_t *adapter,
 		}
 		adapter->pause_map |= (1 << reason);
 		netif_carrier_off(adapter->dev);
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	case WLAN_START_ALL_NETIF_QUEUE_N_CARRIER:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		netif_carrier_on(adapter->dev);
 		adapter->pause_map &= ~(1 << reason);
 		if (!adapter->pause_map) {
 			netif_tx_start_all_queues(adapter->dev);
 			wlan_hdd_update_pause_time(adapter);
 		}
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	case WLAN_NETIF_TX_DISABLE:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		if (!adapter->pause_map) {
 			netif_tx_disable(adapter->dev);
 			wlan_hdd_update_txq_timestamp(adapter->dev);
 			wlan_hdd_update_unpause_time(adapter);
 		}
 		adapter->pause_map |= (1 << reason);
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	case WLAN_NETIF_TX_DISABLE_N_CARRIER:
-		SPIN_LOCK_BH(&adapter->pause_map_lock);
+		spin_lock_bh(&adapter->pause_map_lock);
 		if (!adapter->pause_map) {
 			netif_tx_disable(adapter->dev);
 			wlan_hdd_update_txq_timestamp(adapter->dev);
@@ -1803,7 +1803,7 @@ void wlan_hdd_netif_queue_control(hdd_adapter_t *adapter,
 		}
 		adapter->pause_map |= (1 << reason);
 		netif_carrier_off(adapter->dev);
-		SPIN_UNLOCK_BH(&adapter->pause_map_lock);
+		spin_unlock_bh(&adapter->pause_map_lock);
 		break;
 
 	default:

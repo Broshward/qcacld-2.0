@@ -2393,9 +2393,9 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
                 }
            }
 
-            SPIN_LOCK_BH(&pHddCtx->dfs_lock);
+            spin_lock_bh(&pHddCtx->dfs_lock);
             pHddCtx->dfs_radar_found = VOS_FALSE;
-            SPIN_UNLOCK_BH(&pHddCtx->dfs_lock);
+            spin_unlock_bh(&pHddCtx->dfs_lock);
             WLANSAP_Get_Dfs_Ignore_CAC(pHddCtx->hHal, &ignoreCAC);
             if ((NV_CHANNEL_DFS !=
                 vos_nv_getChannelEnabledState(pHddApCtx->operatingChannel))
@@ -2727,7 +2727,7 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
             /* start timer in sap/p2p_go */
             if (pHddApCtx->bApActive == VOS_FALSE)
             {
-                SPIN_LOCK_BH(&pHddCtx->bus_bw_lock);
+                spin_lock_bh(&pHddCtx->bus_bw_lock);
                 pHostapdAdapter->prev_tx_packets = pHostapdAdapter->stats.tx_packets;
                 pHostapdAdapter->prev_rx_packets = pHostapdAdapter->stats.rx_packets;
                 tlshim_get_intra_bss_fwd_pkts_count(
@@ -2736,7 +2736,7 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
                        &pHostapdAdapter->prev_fwd_rx_packets);
                 pHostapdAdapter->prev_tx_bytes =
                         pHostapdAdapter->stats.tx_bytes;
-                SPIN_UNLOCK_BH(&pHddCtx->bus_bw_lock);
+                spin_unlock_bh(&pHddCtx->bus_bw_lock);
                 hdd_start_bus_bw_compute_timer(pHostapdAdapter);
             }
 #endif
@@ -2873,7 +2873,7 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
             hdd_softap_DeregisterSTA(pHostapdAdapter, staId);
 
             pHddApCtx->bApActive = VOS_FALSE;
-            SPIN_LOCK_BH( &pHostapdAdapter->staInfo_lock );
+            spin_lock_bh( &pHostapdAdapter->staInfo_lock );
             for (i = 0; i < WLAN_MAX_STA_COUNT; i++)
             {
                 if (pHostapdAdapter->aStaInfo[i].isUsed && i != (WLAN_HDD_GET_AP_CTX_PTR(pHostapdAdapter))->uBCStaId)
@@ -2882,7 +2882,7 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
                     break;
                 }
             }
-            SPIN_UNLOCK_BH( &pHostapdAdapter->staInfo_lock );
+            spin_unlock_bh( &pHostapdAdapter->staInfo_lock );
 
             // Start AP inactivity timer if no stations associated with it
             if ((0 != (WLAN_HDD_GET_CTX(pHostapdAdapter))->cfg_ini->nAPAutoShutOff))
@@ -2947,13 +2947,13 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
             /*stop timer in sap/p2p_go */
             if (pHddApCtx->bApActive == FALSE)
             {
-                SPIN_LOCK_BH(&pHddCtx->bus_bw_lock);
+                spin_lock_bh(&pHddCtx->bus_bw_lock);
                 pHostapdAdapter->prev_tx_packets = 0;
                 pHostapdAdapter->prev_rx_packets = 0;
                 pHostapdAdapter->prev_fwd_tx_packets = 0;
                 pHostapdAdapter->prev_fwd_rx_packets = 0;
                 pHostapdAdapter->prev_tx_bytes = 0;
-                SPIN_UNLOCK_BH(&pHddCtx->bus_bw_lock);
+                spin_unlock_bh(&pHddCtx->bus_bw_lock);
                 hdd_stop_bus_bw_compute_timer(pHostapdAdapter);
             }
 #endif
@@ -3381,10 +3381,10 @@ int hdd_softap_set_channel_change(struct net_device *dev, int target_channel)
         }
     }
 
-    SPIN_LOCK_BH(&pHddCtx->dfs_lock);
+    spin_lock_bh(&pHddCtx->dfs_lock);
     if (pHddCtx->dfs_radar_found == VOS_TRUE)
     {
-        SPIN_UNLOCK_BH(&pHddCtx->dfs_lock);
+        spin_unlock_bh(&pHddCtx->dfs_lock);
         hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Channel switch in progress!!",
                __func__);
         ret = -EBUSY;
@@ -3401,7 +3401,7 @@ int hdd_softap_set_channel_change(struct net_device *dev, int target_channel)
      */
     pHddCtx->dfs_radar_found = VOS_TRUE;
 
-    SPIN_UNLOCK_BH(&pHddCtx->dfs_lock);
+    spin_unlock_bh(&pHddCtx->dfs_lock);
     /*
      * Post the Channel Change request to SAP.
      */
@@ -3424,9 +3424,9 @@ int hdd_softap_set_channel_change(struct net_device *dev, int target_channel)
          * queues.
          */
 
-        SPIN_LOCK_BH(&pHddCtx->dfs_lock);
+        spin_lock_bh(&pHddCtx->dfs_lock);
         pHddCtx->dfs_radar_found = VOS_FALSE;
-        SPIN_UNLOCK_BH(&pHddCtx->dfs_lock);
+        spin_unlock_bh(&pHddCtx->dfs_lock);
 
         ret = -EINVAL;
     }
@@ -5300,7 +5300,7 @@ static __iw_softap_getassoc_stamacaddr(struct net_device *dev,
     maclist_index = sizeof(maclist_index);
     left = wrqu->data.length - maclist_index;
 
-    SPIN_LOCK_BH(&pHostapdAdapter->staInfo_lock);
+    spin_lock_bh(&pHostapdAdapter->staInfo_lock);
     while ((cnt < WLAN_MAX_STA_COUNT) && (left >= VOS_MAC_ADDR_SIZE)) {
         if ((pStaInfo[cnt].isUsed) &&
             (!IS_BROADCAST_MAC(pStaInfo[cnt].macAddrSTA.bytes))) {
@@ -5311,7 +5311,7 @@ static __iw_softap_getassoc_stamacaddr(struct net_device *dev,
         }
         cnt++;
     }
-    SPIN_UNLOCK_BH(&pHostapdAdapter->staInfo_lock);
+    spin_unlock_bh(&pHostapdAdapter->staInfo_lock);
 
     *((u32 *)buf) = maclist_index;
     wrqu->data.length = maclist_index;
