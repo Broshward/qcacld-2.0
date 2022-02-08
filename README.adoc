@@ -2,6 +2,14 @@
 
 The qcacld-2.0 is Qualcomm WIFI module out-of-tree driver.
 
+Before compile module patch your kernel sources with:
+[source,console]
+cd /<path to your kernel>
+[source,console]
+for i in /<path to qcaqld-2.0>/patches/kernel/v<your version>/*; do patch -p1 < $i ; done
+[source,console]
+cd /<path to qcaqld-2.0>
+
 To make and make install module for QCA9377-3 and QCA6174-3:
 [source,console]
 $: KERNEL_SRC=<your kernel path> CONFIG_CLD_HL_SDIO_CORE=y CONFIG_PER_VDEV_TX_DESC_POOL=1 SAP_AUTH_OFFLOAD=1 \
