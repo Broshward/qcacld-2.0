@@ -4302,13 +4302,13 @@ static ssize_t dbglog_block_read(struct file *file,
     if (!buf)
        return -ENOMEM;
 
-    SPIN_LOCK_BH(&fwlog->fwlog_queue.lock);
+    spin_lock_bh(&fwlog->fwlog_queue.lock);
 
     if (skb_queue_len(&fwlog->fwlog_queue) == 0) {
        /* we must init under queue lock */
        init_completion(&fwlog->fwlog_completion);
 
-       SPIN_UNLOCK_BH(&fwlog->fwlog_queue.lock);
+       spin_unlock_bh(&fwlog->fwlog_queue.lock);
 
        ret = wait_for_completion_interruptible_timeout(
                     &fwlog->fwlog_completion,
@@ -4318,7 +4318,7 @@ static ssize_t dbglog_block_read(struct file *file,
                return ret;
        }
 
-       SPIN_LOCK_BH(&fwlog->fwlog_queue.lock);
+       spin_lock_bh(&fwlog->fwlog_queue.lock);
     }
 
     while ((skb = __skb_dequeue(&fwlog->fwlog_queue))) {
@@ -4334,7 +4334,7 @@ static ssize_t dbglog_block_read(struct file *file,
        kfree_skb(skb);
     }
 
-    SPIN_UNLOCK_BH(&fwlog->fwlog_queue.lock);
+    spin_unlock_bh(&fwlog->fwlog_queue.lock);
 
     /* FIXME: what to do if len == 0? */
     not_copied = copy_to_user(user_buf, buf, len);

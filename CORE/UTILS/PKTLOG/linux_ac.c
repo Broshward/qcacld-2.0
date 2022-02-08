@@ -144,13 +144,13 @@ int pktlog_alloc_buf(struct ol_softc *scn)
 
 	page_cnt = (sizeof(*(pl_info->buf)) + pl_info->buf_size) / PAGE_SIZE;
 
-	SPIN_LOCK_BH(&pl_info->log_lock);
+	spin_lock_bh(&pl_info->log_lock);
 	if(pl_info->buf != NULL) {
 		printk("Buffer is already in use\n");
-		SPIN_UNLOCK_BH(&pl_info->log_lock);
+		spin_unlock_bh(&pl_info->log_lock);
 		return -EINVAL;
 	}
-	SPIN_UNLOCK_BH(&pl_info->log_lock);
+	spin_unlock_bh(&pl_info->log_lock);
 
 	if ((buffer = vmalloc((page_cnt + 2) * PAGE_SIZE)) == NULL) {
 		printk(PKTLOG_TAG
@@ -175,12 +175,12 @@ int pktlog_alloc_buf(struct ol_softc *scn)
 		SetPageReserved(vpg);
 	}
 
-	SPIN_LOCK_BH(&pl_info->log_lock);
+	spin_lock_bh(&pl_info->log_lock);
 	if(pl_info->buf != NULL)
 		pktlog_release_buf(scn);
 
 	pl_info->buf =  buffer;
-	SPIN_UNLOCK_BH(&pl_info->log_lock);
+	spin_unlock_bh(&pl_info->log_lock);
 	return 0;
 }
 
@@ -582,10 +582,10 @@ static void pktlog_detach(struct ol_softc *scn)
 	remove_proc_entry(WLANDEV_BASENAME, g_pktlog_pde);
 	pktlog_sysctl_unregister(pl_dev);
 
-	SPIN_LOCK_BH(&pl_info->log_lock);
+	spin_lock_bh(&pl_info->log_lock);
 	if (pl_info->buf)
 		pktlog_release_buf(scn);
-	SPIN_UNLOCK_BH(&pl_info->log_lock);
+	spin_unlock_bh(&pl_info->log_lock);
 	pktlog_cleanup(pl_info);
 
 	if (pl_dev) {
@@ -638,14 +638,14 @@ pktlog_read_proc_entry(char *buf, size_t nbytes, loff_t *ppos,
 	int fold_offset, ppos_data, cur_rd_offset, cur_wr_offset;
 	struct ath_pktlog_buf *log_buf;
 
-	SPIN_LOCK_BH(&pl_info->log_lock);
+	spin_lock_bh(&pl_info->log_lock);
 	log_buf = pl_info->buf;
 
 	*read_complete = false;
 
 	if (log_buf == NULL) {
 		*read_complete = true;
-		SPIN_UNLOCK_BH(&pl_info->log_lock);
+		spin_unlock_bh(&pl_info->log_lock);
 		return 0;
 	}
 
@@ -762,7 +762,7 @@ rd_done:
 			*read_complete = true;
 		}
 	}
-	SPIN_UNLOCK_BH(&pl_info->log_lock);
+	spin_unlock_bh(&pl_info->log_lock);
 	return ret_val;
 }
 
@@ -784,11 +784,11 @@ __pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
 #endif
 	struct ath_pktlog_buf *log_buf;
 
-	SPIN_LOCK_BH(&pl_info->log_lock);
+	spin_lock_bh(&pl_info->log_lock);
 	log_buf = pl_info->buf;
 
 	if (log_buf == NULL) {
-		SPIN_UNLOCK_BH(&pl_info->log_lock);
+		spin_unlock_bh(&pl_info->log_lock);
 		return 0;
 	}
 
@@ -805,13 +805,13 @@ __pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
 
 	if (*ppos < bufhdr_size) {
 		count = MIN((bufhdr_size - *ppos), rem_len);
-		SPIN_UNLOCK_BH(&pl_info->log_lock);
+		spin_unlock_bh(&pl_info->log_lock);
 		if (copy_to_user(buf, ((char *)&log_buf->bufhdr) + *ppos,
 				 count))
 			return -EFAULT;
 		rem_len -= count;
 		ret_val += count;
-		SPIN_LOCK_BH(&pl_info->log_lock);
+		spin_lock_bh(&pl_info->log_lock);
 	}
 
 	start_offset = log_buf->rd_offset;
@@ -853,25 +853,25 @@ __pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
 			goto rd_done;
 
 		count = MIN(rem_len, (end_offset - ppos_data + 1));
-		SPIN_UNLOCK_BH(&pl_info->log_lock);
+		spin_unlock_bh(&pl_info->log_lock);
 		if (copy_to_user(buf + ret_val,
 				 log_buf->log_data + ppos_data,
 				 count))
 			return -EFAULT;
 		ret_val += count;
 		rem_len -= count;
-		SPIN_LOCK_BH(&pl_info->log_lock);
+		spin_lock_bh(&pl_info->log_lock);
 	} else {
 		if (ppos_data <= fold_offset) {
 			count = MIN(rem_len, (fold_offset - ppos_data + 1));
-			SPIN_UNLOCK_BH(&pl_info->log_lock);
+			spin_unlock_bh(&pl_info->log_lock);
 			if (copy_to_user(buf + ret_val,
 					 log_buf->log_data + ppos_data,
 					 count))
 				return -EFAULT;
 			ret_val += count;
 			rem_len -= count;
-			SPIN_LOCK_BH(&pl_info->log_lock);
+			spin_lock_bh(&pl_info->log_lock);
 		}
 
 		if (rem_len == 0)
@@ -883,14 +883,14 @@ __pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
 
 		if (ppos_data <= end_offset) {
 			count = MIN(rem_len, (end_offset - ppos_data + 1));
-			SPIN_UNLOCK_BH(&pl_info->log_lock);
+			spin_unlock_bh(&pl_info->log_lock);
 			if (copy_to_user(buf + ret_val,
 					 log_buf->log_data + ppos_data,
 					 count))
 				return -EFAULT;
 			ret_val += count;
 			rem_len -= count;
-			SPIN_LOCK_BH(&pl_info->log_lock);
+			spin_lock_bh(&pl_info->log_lock);
 		}
 	}
 
@@ -901,7 +901,7 @@ rd_done:
 	}
 	*ppos += ret_val;
 
-	SPIN_UNLOCK_BH(&pl_info->log_lock);
+	spin_unlock_bh(&pl_info->log_lock);
 	return ret_val;
 }
 
